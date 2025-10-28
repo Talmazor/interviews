@@ -1,0 +1,7 @@
+{
+    "environment": "development",
+    "service_name": "my-web-app",
+    "deploy_target": ["dev-server-01", "dev-server-02"],
+    "base_artifacts_dir": "./config",
+    "artifact_name_pattern": "{service_name}-{date}"
+}
