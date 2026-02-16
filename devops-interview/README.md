@@ -8,4 +8,23 @@ Terraform code review and architecture design exercise for Senior DevOps Enginee
 
 See [INTERVIEW_GUIDE.md](./INTERVIEW_GUIDE.md) for the full interviewer guide, answer key, and scoring rubric.
 
-> **Do not share the contents of this directory with candidates before the interview.** Candidates should see only the `terraform/` directory during the session.
+> **Do not share `index.html`, `INTERVIEW_GUIDE.md`, or this README with candidates.** These contain answer keys and scoring rubrics.
+
+## Files
+
+| File | Audience | Description |
+|------|----------|-------------|
+| `candidate.html` | **Candidate** | Code viewer + prompts only. No answers, no scoring. Safe to share. |
+| `index.html` | Interviewer | Full tool with answer keys, bug highlighting, and scoring. |
+| `INTERVIEW_GUIDE.md` | Interviewer | Written guide with rubric and answer key. |
+| `terraform/` | Candidate | The Terraform code under review (embedded in both HTML files). |
+
+## Sharing `candidate.html` with candidates
+
+The candidate page is a single self-contained HTML file — no server needed.
+
+- **Option 1:** Send the file directly (Slack, email). Candidate opens it locally in any browser.
+- **Option 2:** Interviewer opens it locally and shares screen.
+- **Option 3:** Host on any static service (S3, Netlify, Vercel) for a permanent URL.
+
+> **Note:** Raw GitHub URLs (`raw.githubusercontent.com`) serve HTML as plain text — they won't render in the browser. GitHub Pages requires Enterprise for private repos.
