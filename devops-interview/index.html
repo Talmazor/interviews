@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps Interview Tool</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3345;
+    --text: #e1e4ed;
+    --text-dim: #8b90a0;
+    --accent: #6c8cff;
+    --accent-dim: #4a6ad4;
+    --red: #ff6b6b;
+    --red-dim: #5c2626;
+    --orange: #ffa94d;
+    --orange-dim: #5c4020;
+    --green: #69db7c;
+    --green-dim: #1e4d2b;
+    --yellow: #ffe066;
+    --purple: #b197fc;
+    --cyan: #66d9e8;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .topbar h1 span { color: var(--accent); }
+
+  .timer-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .timer {
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .timer.warn { color: var(--orange); }
+  .timer.danger { color: var(--red); animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  .timer-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+
+  .timer-btn:hover { background: var(--border); }
+  .timer-btn.active { background: var(--accent-dim); border-color: var(--accent); }
+
+  /* Tabs */
+  .phase-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 12px 24px 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .phase-tab {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phase-tab:hover { color: var(--text); }
+  .phase-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .phase-tab .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .phase-tab .badge.time { background: var(--surface2); color: var(--text-dim); }
+
+  /* Main content */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  .panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    max-height: calc(100vh - 100px);
+  }
+
+  .panel-left { border-right: 1px solid var(--border); }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+  }
+
+  /* Code viewer */
+  .file-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .file-tab {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    transition: all 0.15s;
+  }
+
+  .file-tab:hover { background: var(--surface2); color: var(--text); }
+  .file-tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--text); }
+  .file-tab.has-bugs { position: relative; }
+  .file-tab.has-bugs::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--red);
+    position: absolute;
+    top: 4px;
+    right: 4px;
+  }
+
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .code-block pre {
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    white-space: pre;
+  }
+
+  .code-line {
+    display: block;
+    padding: 0 8px;
+    border-radius: 3px;
+  }
+
+  .code-line .ln {
+    display: inline-block;
+    width: 32px;
+    text-align: right;
+    margin-right: 16px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    user-select: none;
+  }
+
+  .code-line.bug-line { background: var(--red-dim); cursor: pointer; position: relative; }
+  .code-line.bug-line-warn { background: var(--orange-dim); cursor: pointer; }
+  .code-line.bug-line-info { background: rgba(108, 140, 255, 0.12); cursor: pointer; }
+
+  .bug-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .bug-indicator.t1 { background: var(--red); }
+  .bug-indicator.t2 { background: var(--orange); }
+  .bug-indicator.t3 { background: var(--accent); }
+
+  /* Prompt card */
+  .prompt-card {
+    background: var(--surface);
+    border: 1px solid var(--accent-dim);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+
+  .prompt-card .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .prompt-card p { font-size: 14px; color: var(--text); }
+  .prompt-card em { color: var(--text-dim); }
+
+  /* Answer key */
+  .answer-section { margin-bottom: 24px; }
+
+  .answer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .answer-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+
+  .answer-header:hover { background: var(--surface2); }
+
+  .answer-header .tier {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  .tier.t1 { background: var(--red-dim); color: var(--red); }
+  .tier.t2 { background: var(--orange-dim); color: var(--orange); }
+  .tier.t3 { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .tier.cross { background: rgba(177,151,252,0.15); color: var(--purple); }
+
+  .answer-header .title { font-size: 14px; font-weight: 500; flex: 1; }
+
+  .answer-header .chevron {
+    color: var(--text-dim);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .answer-card.open .chevron { transform: rotate(90deg); }
+
+  .answer-body {
+    display: none;
+    padding: 0 16px 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .answer-card.open .answer-body { display: block; }
+
+  .answer-body strong { color: var(--text); }
+  .answer-body code {
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+  }
+
+  .answer-body .file-ref {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .answer-body .ideal-answer {
+    background: var(--green-dim);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-top: 10px;
+    font-style: italic;
+    color: var(--green);
+    font-size: 12px;
+  }
+
+  .answer-body .ideal-answer::before { content: '"4" answer: '; font-weight: 600; font-style: normal; }
+
+  /* Scoring */
+  .score-section { margin-bottom: 24px; }
+  .score-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .score-row .criterion {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .score-btns { display: flex; gap: 4px; }
+
+  .score-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-btn:hover { background: var(--surface2); color: var(--text); }
+  .score-btn.selected { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .phase-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .phase-total .score { font-variant-numeric: tabular-nums; }
+  .phase-total .score.pass { color: var(--green); }
+  .phase-total .score.fail { color: var(--red); }
+  .phase-total .score.na { color: var(--text-dim); }
+
+  .phase-min { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+
+  /* Summary bar */
+  .summary-bar {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
+  }
+
+  .summary-scores {
+    display: flex;
+    gap: 24px;
+    font-size: 13px;
+  }
+
+  .summary-scores .item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .summary-scores .label { color: var(--text-dim); }
+  .summary-scores .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .summary-scores .val.pass { color: var(--green); }
+  .summary-scores .val.fail { color: var(--red); }
+  .summary-scores .val.na { color: var(--text-dim); }
+
+  .decision-btns { display: flex; gap: 8px; }
+
+  .decision-btn {
+    padding: 8px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .decision-btn:hover { background: var(--border); }
+  .decision-btn.selected.pass-btn { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .decision-btn.selected.strong-btn { background: rgba(108,140,255,0.2); border-color: var(--accent); color: var(--accent); }
+  .decision-btn.selected.no-btn { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+
+  /* Notes */
+  .notes-area {
+    margin-top: 16px;
+  }
+
+  .notes-area textarea {
+    width: 100%;
+    min-height: 100px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 12px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    outline: none;
+  }
+
+  .notes-area textarea:focus { border-color: var(--accent); }
+  .notes-area textarea::placeholder { color: var(--text-dim); }
+
+  .notes-area label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Follow-up questions */
+  .followup-list {
+    list-style: none;
+    margin-top: 12px;
+  }
+
+  .followup-list li {
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .followup-list li:hover { background: var(--surface2); border-color: var(--accent-dim); }
+  .followup-list li::before { content: 'Q: '; font-weight: 600; color: var(--accent); }
+
+  /* Auto-fail */
+  .autofail-section { margin-top: 20px; }
+
+  .autofail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .autofail-item input[type="checkbox"] {
+    accent-color: var(--red);
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .autofail-item.checked { color: var(--red); }
+
+  /* Request path diagram */
+  .path-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 12px 0;
+    line-height: 1.8;
+    white-space: pre;
+  }
+
+  .path-diagram .hop-ok { color: var(--green); }
+  .path-diagram .hop-bad { color: var(--red); }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .main { flex-direction: column; }
+    .panel { max-height: none; border-right: none !important; }
+    .panel-left { border-bottom: 1px solid var(--border); }
+  }
+
+  /* Hidden phases */
+  .phase-content { display: none; }
+  .phase-content.active { display: flex; }
+
+  /* Tips */
+  .tip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+
+  .tip-card .tip-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .tip-card .tip-label.green { color: var(--green); }
+  .tip-card .tip-label.red { color: var(--red); }
+  .tip-card .tip-label.info { color: var(--accent); }
+
+  .tip-card ul {
+    list-style: none;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .tip-card ul li { padding: 2px 0; }
+  .tip-card ul li::before { content: '- '; color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Top bar -->
+  <div class="topbar">
+    <h1><span>&#9670;</span> DevOps Interview Tool</h1>
+    <div class="timer-area">
+      <button class="timer-btn" onclick="resetTimer()">Reset</button>
+      <button class="timer-btn" id="timerToggle" onclick="toggleTimer()">Start</button>
+      <div class="timer" id="timer">30:00</div>
+    </div>
+  </div>
+
+  <!-- Phase tabs -->
+  <div class="phase-tabs">
+    <button class="phase-tab active" data-phase="1" onclick="switchPhase(1)">
+      Phase 1: Triage <span class="badge time">8 min</span>
+    </button>
+    <button class="phase-tab" data-phase="2" onclick="switchPhase(2)">
+      Phase 2: Deep-Dive <span class="badge time">10 min</span>
+    </button>
+    <button class="phase-tab" data-phase="3" onclick="switchPhase(3)">
+      Phase 3: Architecture <span class="badge time">12 min</span>
+    </button>
+    <button class="phase-tab" data-phase="4" onclick="switchPhase(4)">
+      Scoring
+    </button>
+  </div>
+
+  <!-- Phase 1 -->
+  <div class="phase-content active main" id="phase-1">
+    <div class="panel panel-left">
+      <div class="panel-header">
+        <span class="panel-title">Terraform Code</span>
+      </div>
+      <div class="file-tabs" id="fileTabs1"></div>
+      <div class="code-block"><pre id="codeView1"></pre></div>
+    </div>
+    <div class="panel">
+      <div class="prompt-card">
+        <div class="label">Prompt to Candidate</div>
+        <p>"Here are three Terraform modules -- networking, ECS, and database -- plus the root module that wires them together. You have about 8 minutes. I do <strong>not</strong> want an exhaustive bug list. Instead:</p>
+        <p style="margin-top:8px">1. What are your <strong>top 3 issues</strong> you'd block deployment over, ranked by severity?<br>
+        2. For each, explain <strong>why</strong> it's dangerous -- what's the blast radius?"</p>
+      </div>
+
+      <div class="prompt-card" style="border-left-color: var(--orange); border-color: var(--orange-dim);">
+        <div class="label" style="color: var(--orange)">Redirect (if listing line-by-line)</div>
+        <p><em>"I can see you're finding a lot -- if you had to pick only three to block the deploy, which three and why?"</em></p>
+      </div>
+
+      <h3 style="font-size:14px; margin: 20px 0 12px; color: var(--text-dim);">ANSWER KEY</h3>
+
+      <div id="answers1"></div>
+    </div>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="phase-content main" id="phase-2">
+    <div class="panel panel-left">
+      <div class="panel-header">
+        <span class="panel-title">Terraform Code</span>
+      </div>
+      <div class="file-tabs" id="fileTabs2"></div>
+      <div class="code-block"><pre id="codeView2"></pre></div>
+    </div>
+    <div class="panel">
+      <div class="prompt-card">
+        <div class="label">Prompt to Candidate</div>
+        <p>"Now let's go deeper. Two questions:</p>
+        <p style="margin-top:8px">1. <strong>Walk me through the full request path</strong> -- from a user on the internet to the database. At each hop, what security controls exist and what's missing?<br>
+        2. <strong>What operational concerns</strong> would keep you up at night if this went to production tonight?"</p>
+      </div>
+
+      <div class="path-diagram"><span class="hop-bad">Internet</span>
+  &rarr; <span class="hop-ok">ALB</span> (port 80, HTTP only -- <span class="hop-bad">no TLS!</span>)
+    &rarr; <span class="hop-bad">ECS Tasks</span> (in public subnets -- <span class="hop-bad">wrong!</span>)
+      &rarr; <span class="hop-bad">RDS</span> (publicly accessible + open SG -- <span class="hop-bad">exposed!</span>)</div>
+
+      <h3 style="font-size:14px; margin: 16px 0 8px; color: var(--text-dim);">FOLLOW-UP QUESTIONS (pick 1-2)</h3>
+      <ul class="followup-list">
+        <li>How would you inject database credentials into the ECS tasks securely?</li>
+        <li>The health check is configured for / with a 200 matcher. What would you change and why?</li>
+        <li>What happens if a bad container image is deployed? Walk me through the failure mode.</li>
+        <li>How would you handle zero-downtime deployments with this setup?</li>
+      </ul>
+
+      <h3 style="font-size:14px; margin: 20px 0 12px; color: var(--text-dim);">ANSWER KEY</h3>
+      <div id="answers2"></div>
+    </div>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="phase-content main" id="phase-3">
+    <div class="panel panel-left" style="max-width: 50%;">
+      <div class="prompt-card">
+        <div class="label">Prompt to Candidate</div>
+        <p>"Set aside the bugs. You're the tech lead. You need to take this infrastructure to production for a team of 5 engineers across dev, staging, and production.</p>
+        <p style="margin-top:8px">1. <strong>How would you restructure this Terraform codebase?</strong> Think: module organization, state management, environment separation, CI/CD.<br>
+        2. <strong>What AWS services are completely absent</strong> that any production environment needs?<br>
+        3. If I gave you <strong>one week before go-live</strong>, what would you prioritize?"</p>
+      </div>
+
+      <h3 style="font-size:14px; margin: 16px 0 8px; color: var(--text-dim);">FOLLOW-UP QUESTIONS (pick 1-2)</h3>
+      <ul class="followup-list">
+        <li>How would you set up CI/CD for this infrastructure?</li>
+        <li>How would you handle database migrations in this architecture?</li>
+        <li>What does your monitoring and alerting story look like end-to-end?</li>
+        <li>How would you handle a scenario where the ECS service needs to connect to a third-party API that requires IP whitelisting?</li>
+      </ul>
+
+      <h3 style="font-size:14px; margin: 24px 0 8px; color: var(--text-dim);">BONUS: TERRAGRUNT</h3>
+      <div class="prompt-card" style="border-left-color: var(--purple); border-color: rgba(177,151,252,0.3);">
+        <div class="label" style="color: var(--purple)">Only if Phase 3 finishes early</div>
+        <p>"If you were to wrap this in Terragrunt for multi-environment deployment, how would you structure it?"</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 style="font-size:14px; margin-bottom: 12px; color: var(--text-dim);">EXPECTED DISCUSSION AREAS</h3>
+      <div id="answers3"></div>
+
+      <h3 style="font-size:14px; margin: 24px 0 12px; color: var(--text-dim);">INTERVIEWER TIPS</h3>
+      <div class="tip-card">
+        <div class="tip-label green">Green Flags</div>
+        <ul>
+          <li>Asks clarifying questions: "What's the threat model? What compliance requirements?"</li>
+          <li>Prioritizes by blast radius, not by line number</li>
+          <li>Connects issues across modules</li>
+          <li>Proposes systemic fixes, not point fixes</li>
+          <li>Mentions tools: tfsec, checkov, Terraform Cloud, Infracost, OIDC</li>
+        </ul>
+      </div>
+      <div class="tip-card">
+        <div class="tip-label red">Red Flags</div>
+        <ul>
+          <li>Reads sequentially from line 1 instead of scanning</li>
+          <li>States <em>that</em> something is wrong but not <em>why</em></li>
+          <li>No mental model for multi-environment Terraform</li>
+          <li>Cannot discuss IAM beyond "it needs permissions"</li>
+          <li>Fixates on cosmetic issues while missing security gaps</li>
+        </ul>
+      </div>
+      <div class="tip-card">
+        <div class="tip-label info">Calibration</div>
+        <ul>
+          <li>Don't penalize missing Tier 3 issues if they nail architecture</li>
+          <li>Phase 3 is weighted highest intentionally</li>
+          <li>Finding every bug but no state management strategy = no pass</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 4: Scoring -->
+  <div class="phase-content main" id="phase-4">
+    <div class="panel panel-left">
+      <h3 style="font-size: 14px; margin-bottom: 16px; color: var(--text-dim);">SCORE CARD</h3>
+      <div id="scoreCard"></div>
+
+      <div class="autofail-section">
+        <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--red);">AUTO-FAIL SIGNALS</h3>
+        <div id="autofails"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="notes-area">
+        <label>Candidate Name</label>
+        <input type="text" id="candidateName" placeholder="Enter candidate name..."
+          style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;outline:none;margin-bottom:16px;">
+      </div>
+      <div class="notes-area">
+        <label>Interview Notes</label>
+        <textarea id="interviewNotes" placeholder="Capture observations, notable answers, and specific examples..." rows="12"></textarea>
+      </div>
+      <div class="notes-area" style="margin-top:12px">
+        <label>Key Strengths</label>
+        <textarea id="strengths" placeholder="What did the candidate do well?" rows="4"></textarea>
+      </div>
+      <div class="notes-area" style="margin-top:12px">
+        <label>Areas of Concern</label>
+        <textarea id="concerns" placeholder="What gaps or weaknesses were observed?" rows="4"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="summary-bar">
+    <div class="summary-scores">
+      <div class="item"><span class="label">P1:</span> <span class="val na" id="sumP1">-/12</span></div>
+      <div class="item"><span class="label">P2:</span> <span class="val na" id="sumP2">-/16</span></div>
+      <div class="item"><span class="label">P3:</span> <span class="val na" id="sumP3">-/20</span></div>
+      <div class="item" style="padding-left:12px;border-left:1px solid var(--border)"><span class="label">Total:</span> <span class="val na" id="sumTotal" style="font-size:16px">-/48</span></div>
+    </div>
+    <div class="decision-btns">
+      <button class="decision-btn no-btn" onclick="setDecision('no')">No Hire</button>
+      <button class="decision-btn pass-btn" onclick="setDecision('pass')">Pass</button>
+      <button class="decision-btn strong-btn" onclick="setDecision('strong')">Strong Hire</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+
+const FILES = {
+  'main.tf': {
+    label: 'main.tf',
+    path: 'terraform/main.tf',
+    bugs: true,
+    content: `# Root module - API Platform Infrastructure
+# Provisions a containerized API on ECS Fargate with RDS PostgreSQL and ALB
+
+provider "aws" {
+  region = var.region
+}
+
+locals {
+  environment = var.environment
+  common_tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "terraform"
+  }
+}
+
+# Networking - VPC, subnets, NAT gateway
+module "networking" {
+  source = "./modules/networking"
+
+  vpc_cidr             = var.vpc_cidr
+  azs                  = var.azs
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  private_subnet_cidrs = var.private_subnet_cidrs
+  environment          = local.environment
+  common_tags          = local.common_tags
+}
+
+# Database - RDS PostgreSQL
+module "database" {
+  source = "./modules/database"
+
+  vpc_id      = module.networking.vpc_id
+  subnet_ids  = module.networking.private_subnet_ids
+  db_name     = var.db_name
+  db_username = var.db_username
+  db_password = var.db_password
+  environment = local.environment
+  common_tags = local.common_tags
+}
+
+# ECS - Fargate cluster, ALB, and service
+module "ecs" {
+  source = "./modules/ecs"
+
+  vpc_id            = module.networking.vpc_id
+  subnet_ids        = module.networking.public_subnet_ids
+  public_subnet_ids = module.networking.public_subnet_ids
+  container_image   = var.container_image
+  container_port    = 8080
+  service_name      = "api"
+  project_name      = var.project_name
+  environment       = local.environment
+  aws_region        = var.region
+  db_host           = module.database.rds_endpoint
+  db_port           = module.database.rds_port
+  db_name           = var.db_name
+  db_username       = var.db_username
+  db_password       = var.db_password
+  common_tags       = local.common_tags
+}`,
+    bugLines: {
+      47: { tier: 'cross', note: 'Cross-cutting: passes public_subnet_ids to ECS (should be private)' },
+      37: { tier: 't1', note: 'Plaintext db_password passed through' },
+      59: { tier: 't1', note: 'Plaintext db_password passed to ECS module' },
+    }
+  },
+  'variables.tf': {
+    label: 'variables.tf',
+    path: 'terraform/variables.tf',
+    bugs: true,
+    content: `variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "production"
+}
+
+variable "project_name" {
+  description = "Name of the project"
+  type        = string
+  default     = "api-platform"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "azs" {
+  description = "Availability zones"
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
+}
+
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for public subnets"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+}
+
+variable "private_subnet_cidrs" {
+  description = "CIDR blocks for private subnets"
+  type        = list(string)
+  default     = ["10.0.10.0/24", "10.0.11.0/24", "10.0.12.0/24"]
+}
+
+variable "db_name" {
+  description = "Name of the PostgreSQL database"
+  type        = string
+  default     = "apidb"
+}
+
+variable "db_username" {
+  description = "Database master username"
+  type        = string
+  default     = "admin"
+}
+
+variable "db_password" {
+  description = "Database master password"
+  type        = string
+  default     = "SuperSecret123!"
+}
+
+variable "container_image" {
+  description = "Docker image for the API service"
+  type        = string
+  default     = "123456789012.dkr.ecr.us-east-1.amazonaws.com/api:latest"
+}`,
+    bugLines: {
+      58: { tier: 't1', note: 'T1-1: Plaintext password default' },
+      64: { tier: 't3', note: 'T3-7: Mutable :latest tag' },
+    }
+  },
+  'networking': {
+    label: 'modules/networking',
+    path: 'terraform/modules/networking/main.tf',
+    bugs: true,
+    content: `# Networking module - VPC, subnets, internet gateway, NAT gateway, and routing
+
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-vpc"
+  })
+}
+
+# Public subnets for ALB and NAT gateway
+resource "aws_subnet" "public" {
+  for_each = {
+    for idx, cidr in var.public_subnet_cidrs :
+    "public-\${idx}" => {
+      cidr = cidr
+      az   = var.azs[idx]
+    }
+  }
+
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = each.value.cidr
+  availability_zone       = each.value.az
+  map_public_ip_on_launch = true
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-public-\${each.key}"
+    Tier = "Public"
+  })
+}
+
+# Private subnets for ECS tasks and RDS
+resource "aws_subnet" "private" {
+  for_each = {
+    for idx, cidr in var.private_subnet_cidrs :
+    "private-\${idx}" => {
+      cidr = cidr
+      az   = var.azs[idx]
+    }
+  }
+
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = each.value.cidr
+  availability_zone = each.value.az
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-private-\${each.key}"
+    Tier = "Private"
+  })
+}
+
+# Internet gateway for public subnets
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-igw"
+  })
+}
+
+# Single NAT gateway for private subnet internet access
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-nat-eip"
+  })
+}
+
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public["public-0"].id
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-nat-gw"
+  })
+
+  depends_on = [aws_internet_gateway.main]
+}
+
+# Public route table - routes to internet via IGW
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-public-rt"
+  })
+}
+
+# Private route table - routes to internet via NAT gateway
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-private-rt"
+  })
+}
+
+# Route table associations
+resource "aws_route_table_association" "public" {
+  for_each       = aws_subnet.public
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private" {
+  for_each       = aws_subnet.private
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.private.id
+}`,
+    bugLines: {
+      72: { tier: 't3', note: 'T3-8: Single-AZ NAT gateway' },
+    }
+  },
+  'ecs': {
+    label: 'modules/ecs',
+    path: 'terraform/modules/ecs/main.tf',
+    bugs: true,
+    content: `# ECS module - Fargate cluster, ALB, task definition, service, IAM, and logging
+
+# --- Security Groups ---
+
+resource "aws_security_group" "alb" {
+  name        = "\${var.environment}-alb-sg"
+  description = "Security group for Application Load Balancer"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "HTTP from internet"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-alb-sg"
+  })
+}
+
+resource "aws_security_group" "ecs_tasks" {
+  name        = "\${var.environment}-ecs-tasks-sg"
+  description = "Security group for ECS Fargate tasks"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "Allow traffic from ALB"
+    from_port       = var.container_port
+    to_port         = var.container_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-ecs-tasks-sg"
+  })
+}
+
+# --- Application Load Balancer ---
+
+resource "aws_lb" "main" {
+  name               = "\${var.environment}-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets            = var.public_subnet_ids
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-alb"
+  })
+}
+
+resource "aws_lb_target_group" "main" {
+  name        = "\${var.environment}-tg"
+  port        = var.container_port
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    enabled             = true
+    path                = "/"
+    port                = "traffic-port"
+    healthy_threshold   = 3
+    unhealthy_threshold = 2
+    timeout             = 5
+    interval            = 30
+    matcher             = "200"
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-tg"
+  })
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.main.arn
+  }
+}
+
+# --- IAM Roles ---
+
+resource "aws_iam_role" "ecs_execution_role" {
+  name = "\${var.environment}-ecs-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = var.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_execution" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# --- CloudWatch Logging ---
+
+resource "aws_cloudwatch_log_group" "ecs" {
+  name              = "/ecs/\${var.service_name}"
+  retention_in_days = 30
+
+  tags = var.common_tags
+}
+
+# --- ECS Cluster and Service ---
+
+resource "aws_ecs_cluster" "main" {
+  name = "\${var.environment}-cluster"
+
+  tags = var.common_tags
+}
+
+resource "aws_ecs_task_definition" "main" {
+  family                   = "\${var.environment}-\${var.service_name}"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_execution_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = var.service_name
+      image     = var.container_image
+      essential = true
+
+      portMappings = [
+        {
+          containerPort = var.container_port
+          protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        { name = "DB_HOST", value = var.db_host },
+        { name = "DB_PORT", value = tostring(var.db_port) },
+        { name = "DB_NAME", value = var.db_name },
+        { name = "DB_USER", value = var.db_username },
+        { name = "DB_PASSWORD", value = var.db_password },
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/\${var.project_name}-\${var.environment}"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+    }
+  ])
+
+  tags = var.common_tags
+}
+
+resource "aws_ecs_service" "main" {
+  name            = "\${var.environment}-\${var.service_name}"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.main.arn
+  desired_count   = 2
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.subnet_ids
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = true
+  }
+
+  tags = var.common_tags
+}`,
+    bugLines: {
+      78: { tier: 't2', note: 'T2-2: Health check on / with 200 matcher, 30s interval' },
+      84: { tier: 't2', note: 'T2-2: Slow health check interval' },
+      93: { tier: 't3', note: 'T3-1: HTTP only, no HTTPS listener' },
+      153: { tier: 't2', note: 'T2-1: Same role for task_role_arn and execution_role_arn' },
+      173: { tier: 't1', note: 'T1-1: DB_PASSWORD as plaintext environment variable' },
+      179: { tier: 't2', note: 'T2-5: Log group name mismatch (references project_name-environment, not service_name)' },
+      131: { tier: 't2', note: 'T2-5: Log group created as /ecs/${service_name} but container references different name' },
+      194: { tier: 't3', note: 'T3-3: Hardcoded desired_count, no autoscaling' },
+      200: { tier: 'cross', note: 'Cross-1: assign_public_ip = true (should be false, tasks in private subnets)' },
+    }
+  },
+  'database': {
+    label: 'modules/database',
+    path: 'terraform/modules/database/main.tf',
+    bugs: true,
+    content: `# Database module - RDS PostgreSQL instance with networking
+
+resource "aws_db_subnet_group" "main" {
+  name       = "\${var.environment}-db-subnet-group"
+  subnet_ids = var.subnet_ids
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-db-subnet-group"
+  })
+}
+
+# Security group for database access
+resource "aws_security_group" "database" {
+  name        = "\${var.environment}-db-sg"
+  description = "Security group for RDS PostgreSQL"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "PostgreSQL access"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-db-sg"
+  })
+}
+
+# RDS PostgreSQL instance
+resource "aws_db_instance" "main" {
+  identifier     = "\${var.environment}-postgres"
+  engine         = "postgres"
+  engine_version = "14.9"
+  instance_class = "db.t3.micro"
+
+  allocated_storage = 20
+  storage_type      = "gp2"
+
+  db_name  = var.db_name
+  username = var.db_username
+  password = var.db_password
+
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.database.id]
+
+  publicly_accessible  = true
+  skip_final_snapshot  = true
+
+  tags = merge(var.common_tags, {
+    Name = "\${var.environment}-postgres"
+  })
+}`,
+    bugLines: {
+      23: { tier: 't1', note: 'T1-3: Database SG open to 0.0.0.0/0 on port 5432' },
+      55: { tier: 't1', note: 'T1-2: publicly_accessible = true on production RDS' },
+      56: { tier: 't2', note: 'T2-3: skip_final_snapshot = true, no deletion_protection' },
+      43: { tier: 't3', note: 'T3-2: db.t3.micro for production, no multi_az' },
+    }
+  }
+};
+
+const ANSWERS_P1 = [
+  { tier: 't1', title: 'RDS publicly accessible with open security group', file: 'modules/database/main.tf lines 23, 55',
+    body: 'Database SG allows port 5432 from <code>cidr_blocks = ["0.0.0.0/0"]</code>, and the RDS instance has <code>publicly_accessible = true</code>. Anyone on the internet can connect to the production database.',
+    ideal: 'The SG should use security_groups = [ecs_tasks_sg_id] instead of CIDR blocks. publicly_accessible must be false. Even if the SG were restrictive, a public RDS endpoint is a defense-in-depth failure.' },
+  { tier: 't1', title: 'Database password hardcoded as variable default', file: 'terraform/variables.tf line 58 + modules/ecs/main.tf line 173',
+    body: '<code>default = "SuperSecret123!"</code> in variables.tf, passed through main.tf to both modules, injected as plaintext <code>environment</code> variable in ECS task definition. Password is in version control, Terraform state, plan output, and ECS console.',
+    ideal: 'Use AWS Secrets Manager. Reference with a data source, inject via the ECS secrets block (pulls from Secrets Manager at runtime) instead of environment block. Mark the variable as sensitive = true and never set a default.' },
+  { tier: 't1', title: 'ECS service not wired to ALB -- missing load_balancer block', file: 'modules/ecs/main.tf lines 190-204',
+    body: 'The <code>aws_ecs_service</code> has no <code>load_balancer</code> block. ALB, listener, and target group are all created, but nothing registers ECS tasks into the target group. Traffic hits ALB and gets 503.',
+    ideal: 'The service needs a load_balancer { target_group_arn, container_name, container_port } block. Without it, Fargate tasks launch but ALB has no registered targets. terraform plan won\'t catch this -- you need to understand the full request path.' },
+  { tier: 'cross', title: 'ECS tasks in public subnets with public IPs (cross-cutting)', file: 'terraform/main.tf line 47 + modules/ecs/main.tf line 200',
+    body: 'Root module passes <code>public_subnet_ids</code> to ECS module\'s <code>subnet_ids</code>. ECS service sets <code>assign_public_ip = true</code>. Containers are directly addressable from the internet, bypassing the ALB.',
+    ideal: 'The root module should pass private_subnet_ids. assign_public_ip should be false. Containers egress through NAT gateway. The ALB is in public subnets (correct), but containers must be in private subnets behind it.' },
+  { tier: 't2', title: 'Same IAM role for task_role_arn and execution_role_arn', file: 'modules/ecs/main.tf lines 152-153',
+    body: 'Both <code>execution_role_arn</code> and <code>task_role_arn</code> point to the same role. Execution role (ECS infrastructure: pulling images, pushing logs) and task role (application permissions) should be separate. Violates least privilege.',
+    ideal: '' },
+  { tier: 't2', title: 'Health check on / with matcher = "200", slow interval', file: 'modules/ecs/main.tf lines 76-85',
+    body: 'APIs typically don\'t serve 200 on <code>/</code>. Should use a dedicated <code>/healthz</code> endpoint. 30s interval means 60s to detect an unhealthy container.',
+    ideal: '' },
+  { tier: 't2', title: 'RDS: skip_final_snapshot = true, no deletion_protection', file: 'modules/database/main.tf lines 55-56',
+    body: 'A <code>terraform destroy</code> or resource removal deletes the database with no backup and no safety net. Production databases need <code>deletion_protection = true</code> and <code>skip_final_snapshot = false</code>.',
+    ideal: '' },
+  { tier: 't2', title: 'No deployment circuit breaker on ECS service', file: 'modules/ecs/main.tf lines 190-204 (absent)',
+    body: 'A bad image push causes ECS to loop trying to launch failing tasks, eventually draining all healthy containers. Needs <code>deployment_circuit_breaker { enable = true, rollback = true }</code>.',
+    ideal: '' },
+  { tier: 't2', title: 'Log group name mismatch', file: 'modules/ecs/main.tf lines 131 vs 179',
+    body: 'Log group created as <code>/ecs/${var.service_name}</code> (resolves to <code>/ecs/api</code>), but container definition references <code>/ecs/${var.project_name}-${var.environment}</code> (resolves to <code>/ecs/api-platform-production</code>). Container will fail to start.',
+    ideal: '' },
+];
+
+const ANSWERS_P2 = [
+  { tier: 't2', title: 'Request Path: Internet -> ALB', file: '',
+    body: '<strong>What exists:</strong> SG allows port 80, ALB is internet-facing.<br><strong>What\'s missing:</strong> No HTTPS/TLS (port 443), no WAF, no rate limiting. All traffic is unencrypted.', ideal: '' },
+  { tier: 't2', title: 'Request Path: ALB -> ECS Tasks', file: '',
+    body: '<strong>What exists:</strong> SG allows container port from ALB SG (correct pattern).<br><strong>What\'s missing:</strong> ECS tasks in public subnets (should be private), public IPs assigned, no load_balancer block so ALB can\'t actually forward traffic to tasks.', ideal: '' },
+  { tier: 't1', title: 'Request Path: ECS -> RDS', file: '',
+    body: '<strong>What exists:</strong> DB password in plaintext env var.<br><strong>What\'s missing:</strong> SG allows 0.0.0.0/0 (should be ECS SG only), RDS publicly accessible, no encryption in transit, same IAM role for task/execution.', ideal: '' },
+  { tier: 't2', title: 'Operational: Deployment Safety', file: '',
+    body: 'No circuit breaker means a bad image causes cascading failure. No rollback mechanism. <code>desired_count = 2</code> with no autoscaling.', ideal: '' },
+  { tier: 't2', title: 'Operational: Monitoring Gaps', file: '',
+    body: 'Log group name mismatch means container logs are lost. No CloudWatch alarms defined. No dashboards. No alerting.', ideal: '' },
+  { tier: 't2', title: 'Operational: Data Protection', file: '',
+    body: 'No deletion protection, no final snapshot, no automated backups configured. A single <code>terraform destroy</code> erases the production database.', ideal: '' },
+  { tier: 't3', title: 'Operational: Secrets & Reliability', file: '',
+    body: 'Password flows through Terraform state and env vars. No rotation. Single-AZ NAT gateway is a SPOF for all private subnet egress.', ideal: '' },
+];
+
+const ANSWERS_P3 = [
+  { tier: 't3', title: 'Codebase Structure', file: '',
+    body: '<strong>Meets (3):</strong> Env separation (dev/staging/prod dirs or Terragrunt), module versioning (Git tags/registry), shared config, bootstrap layer for state bucket.<br><br><strong>Exceeds (4):</strong> Module registry, semantic versioning, terratest, CODEOWNERS for prod, module documentation.', ideal: '' },
+  { tier: 't3', title: 'State Management', file: '',
+    body: '<strong>Meets (3):</strong> S3 + DynamoDB for remote state with locking, per-env state files, access control, bootstrap chicken-and-egg awareness.<br><br><strong>Exceeds (4):</strong> Cross-account state, encryption with CMK, state backup/recovery, import workflows.', ideal: '' },
+  { tier: 't3', title: 'Security Architecture', file: '',
+    body: '<strong>Meets (3):</strong> Network segmentation (public ALB / private ECS / private RDS), TLS termination at ALB, Secrets Manager, separate task/execution roles.<br><br><strong>Exceeds (4):</strong> VPC endpoints for ECR/S3/CloudWatch, WAF, CloudTrail, AWS Config, VPC Flow Logs, Security Hub, SCPs.', ideal: '' },
+  { tier: 't3', title: 'Reliability & Scaling', file: '',
+    body: '<strong>Meets (3):</strong> ECS autoscaling (target tracking), multi-AZ NAT gateways, RDS multi-AZ, circuit breaker with rollback, health check tuning, automated backups.<br><br><strong>Exceeds (4):</strong> RDS read replicas, Performance Insights, cross-region DR (RTO/RPO), ECS capacity providers, chaos engineering (FIS).', ideal: '' },
+  { tier: 't3', title: 'CI/CD for Infrastructure', file: '',
+    body: '<strong>Meets (3):</strong> <code>terraform plan</code> on PR with review, <code>terraform apply</code> on merge, separate pipelines per env with promotion, policy-as-code (tfsec/checkov).<br><br><strong>Exceeds (4):</strong> Drift detection, cost estimation (Infracost), OIDC auth (no long-lived creds), image scanning in ECR, blue/green with CodeDeploy.', ideal: '' },
+];
+
+const SCORE_CRITERIA = {
+  p1: [
+    { key: 'p1_security', label: 'Security (public DB + open SG)', min: 6 },
+    { key: 'p1_functional', label: 'Functional correctness (ALB not wired)' },
+    { key: 'p1_secrets', label: 'Secrets management (plaintext password)' },
+  ],
+  p2: [
+    { key: 'p2_path', label: 'Request path analysis', min: 8 },
+    { key: 'p2_iam', label: 'IAM understanding (task vs execution role)' },
+    { key: 'p2_ops', label: 'Operational reasoning' },
+    { key: 'p2_cross', label: 'Cross-module awareness' },
+  ],
+  p3: [
+    { key: 'p3_structure', label: 'Codebase structure', min: 12 },
+    { key: 'p3_state', label: 'State management strategy' },
+    { key: 'p3_security', label: 'Security architecture' },
+    { key: 'p3_reliability', label: 'Reliability & scaling' },
+    { key: 'p3_cicd', label: 'CI/CD for infrastructure' },
+  ],
+};
+
+const AUTOFAILS = [
+  'Cannot identify publicly accessible RDS + open SG as a security issue',
+  'Cannot explain difference between task role and execution role',
+  'Cannot describe how to structure Terraform for multiple environments',
+  'No awareness of secrets management beyond "don\'t hardcode passwords"',
+  'Cannot articulate a deployment safety strategy',
+];
+
+// ========== STATE ==========
+let scores = {};
+let decision = null;
+let timerInterval = null;
+let timerSeconds = 30 * 60;
+let timerRunning = false;
+let currentFiles = { 1: 'main.tf', 2: 'main.tf' };
+
+// ========== TIMER ==========
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('timer');
+  el.textContent = formatTime(timerSeconds);
+  el.className = 'timer' + (timerSeconds <= 120 ? ' danger' : timerSeconds <= 300 ? ' warn' : '');
+}
+
+function toggleTimer() {
+  const btn = document.getElementById('timerToggle');
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    btn.textContent = 'Resume';
+    btn.classList.remove('active');
+  } else {
+    timerInterval = setInterval(() => {
+      if (timerSeconds > 0) { timerSeconds--; updateTimerDisplay(); }
+      else { clearInterval(timerInterval); timerRunning = false; }
+    }, 1000);
+    timerRunning = true;
+    btn.textContent = 'Pause';
+    btn.classList.add('active');
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 30 * 60;
+  updateTimerDisplay();
+  document.getElementById('timerToggle').textContent = 'Start';
+  document.getElementById('timerToggle').classList.remove('active');
+}
+
+// ========== CODE VIEWER ==========
+function renderCode(viewId, fileKey) {
+  const file = FILES[fileKey];
+  const lines = file.content.split('\n');
+  const pre = document.getElementById(viewId);
+  pre.innerHTML = lines.map((line, i) => {
+    const ln = i + 1;
+    const bug = file.bugLines?.[ln];
+    const cls = bug ? (bug.tier === 't1' ? 'bug-line' : bug.tier === 't2' ? 'bug-line-warn' : bug.tier === 'cross' ? 'bug-line-warn' : 'bug-line-info') : '';
+    const indicator = bug ? `<span class="bug-indicator ${bug.tier}" title="${bug.note}"></span>` : '';
+    const escaped = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<span class="code-line ${cls}" ${bug ? `title="${bug.note}"` : ''}><span class="ln">${ln}</span>${indicator}${escaped}</span>`;
+  }).join('\n');
+}
+
+function renderFileTabs(tabsId, viewId, stateKey) {
+  const container = document.getElementById(tabsId);
+  container.innerHTML = '';
+  Object.keys(FILES).forEach(key => {
+    const f = FILES[key];
+    const btn = document.createElement('button');
+    btn.className = 'file-tab' + (currentFiles[stateKey] === key ? ' active' : '') + (f.bugs ? ' has-bugs' : '');
+    btn.textContent = f.label;
+    btn.onclick = () => {
+      currentFiles[stateKey] = key;
+      renderFileTabs(tabsId, viewId, stateKey);
+      renderCode(viewId, key);
+    };
+    container.appendChild(btn);
+  });
+}
+
+// ========== ANSWERS ==========
+function renderAnswers(containerId, answers) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = answers.map((a, i) => `
+    <div class="answer-card" onclick="this.classList.toggle('open')">
+      <div class="answer-header">
+        <span class="tier ${a.tier}">${a.tier === 'cross' ? 'Cross' : a.tier.toUpperCase()}</span>
+        <span class="title">${a.title}</span>
+        <span class="chevron">&#9654;</span>
+      </div>
+      <div class="answer-body">
+        ${a.file ? `<div class="file-ref">${a.file}</div>` : ''}
+        <p>${a.body}</p>
+        ${a.ideal ? `<div class="ideal-answer">${a.ideal}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ========== SCORING ==========
+function renderScoreCard() {
+  const el = document.getElementById('scoreCard');
+  let html = '';
+
+  const phases = [
+    { key: 'p1', label: 'Phase 1: Triage', max: 12, min: 6 },
+    { key: 'p2', label: 'Phase 2: Deep-Dive', max: 16, min: 8 },
+    { key: 'p3', label: 'Phase 3: Architecture', max: 20, min: 12 },
+  ];
+
+  phases.forEach(phase => {
+    html += `<div class="score-section"><h3>${phase.label} <span style="font-weight:400;color:var(--text-dim);font-size:12px">(max ${phase.max}, min ${phase.min} to pass)</span></h3>`;
+    SCORE_CRITERIA[phase.key].forEach(c => {
+      html += `<div class="score-row">
+        <span class="criterion">${c.label}</span>
+        <div class="score-btns">
+          ${[1,2,3,4].map(n => `<button class="score-btn ${scores[c.key] === n ? 'selected' : ''}" onclick="setScore('${c.key}', ${n})">${n}</button>`).join('')}
+        </div>
+      </div>`;
+    });
+
+    const total = SCORE_CRITERIA[phase.key].reduce((s, c) => s + (scores[c.key] || 0), 0);
+    const allScored = SCORE_CRITERIA[phase.key].every(c => scores[c.key]);
+    const passes = total >= phase.min;
+    html += `<div class="phase-total">
+      <span>Subtotal <span class="phase-min">(min ${phase.min})</span></span>
+      <span class="score ${allScored ? (passes ? 'pass' : 'fail') : 'na'}">${allScored ? total : '-'}/${phase.max}</span>
+    </div></div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+function renderAutofails() {
+  const el = document.getElementById('autofails');
+  el.innerHTML = AUTOFAILS.map((af, i) => `
+    <div class="autofail-item" id="af-${i}">
+      <input type="checkbox" onchange="this.parentElement.classList.toggle('checked', this.checked); updateSummary();">
+      <span>${af}</span>
+    </div>
+  `).join('');
+}
+
+function setScore(key, val) {
+  scores[key] = scores[key] === val ? undefined : val;
+  renderScoreCard();
+  updateSummary();
+}
+
+function updateSummary() {
+  const phases = [
+    { key: 'p1', el: 'sumP1', max: 12, min: 6 },
+    { key: 'p2', el: 'sumP2', max: 16, min: 8 },
+    { key: 'p3', el: 'sumP3', max: 20, min: 12 },
+  ];
+
+  let grandTotal = 0;
+  let allScored = true;
+
+  phases.forEach(p => {
+    const criteria = SCORE_CRITERIA[p.key];
+    const scored = criteria.every(c => scores[c.key]);
+    const total = criteria.reduce((s, c) => s + (scores[c.key] || 0), 0);
+    grandTotal += total;
+    if (!scored) allScored = false;
+    const el = document.getElementById(p.el);
+    el.textContent = `${scored ? total : '-'}/${p.max}`;
+    el.className = 'val ' + (scored ? (total >= p.min ? 'pass' : 'fail') : 'na');
+  });
+
+  const totalEl = document.getElementById('sumTotal');
+  totalEl.textContent = `${allScored ? grandTotal : '-'}/48`;
+  totalEl.className = 'val ' + (allScored ? (grandTotal >= 30 ? 'pass' : 'fail') : 'na');
+}
+
+function setDecision(d) {
+  decision = decision === d ? null : d;
+  document.querySelectorAll('.decision-btn').forEach(btn => btn.classList.remove('selected'));
+  if (decision) {
+    document.querySelector(`.${decision === 'pass' ? 'pass' : decision === 'strong' ? 'strong' : 'no'}-btn`).classList.add('selected');
+  }
+}
+
+// ========== PHASE SWITCHING ==========
+function switchPhase(n) {
+  document.querySelectorAll('.phase-tab').forEach(t => t.classList.toggle('active', t.dataset.phase == n));
+  document.querySelectorAll('.phase-content').forEach(p => p.classList.remove('active'));
+  document.getElementById('phase-' + n).classList.add('active');
+}
+
+// ========== INIT ==========
+function init() {
+  renderFileTabs('fileTabs1', 'codeView1', 1);
+  renderFileTabs('fileTabs2', 'codeView2', 2);
+  renderCode('codeView1', 'main.tf');
+  renderCode('codeView2', 'main.tf');
+  renderAnswers('answers1', ANSWERS_P1);
+  renderAnswers('answers2', ANSWERS_P2);
+  renderAnswers('answers3', ANSWERS_P3);
+  renderScoreCard();
+  renderAutofails();
+  updateTimerDisplay();
+}
+
+init();
+</script>
+</body>
+</html>
